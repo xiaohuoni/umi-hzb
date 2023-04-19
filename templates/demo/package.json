@@ -1,0 +1,15 @@
+{
+  "name": "hzbdemo",
+  "version": "0.0.0",
+  "description": "",
+  "scripts": {
+    "ask": "hzb ask",
+    "scraped": "hzb scraped"
+  },
+  "dependencies": {
+    "hzb": "^0.0.9"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11"
+  }
+}

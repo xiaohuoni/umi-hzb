@@ -1,0 +1,46 @@
+{
+  "name": "hzb",
+  "version": "0.0.9",
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "main": "dist/index.js",
+  "types": "index.d.ts",
+  "bin": {
+    "hzb": "bin/hzb.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "processed",
+    "templates",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "build": "father build",
+    "dev": "father dev",
+    "format": "prettier --cache --write .",
+    "hzb": "node bin/hzb.js",
+    "hzb:ts": "tsx bin/hzb.ts",
+    "ttt": "tsx src/utils/test.ts"
+  },
+  "dependencies": {
+    "@dqbd/tiktoken": "^1.0.6",
+    "@stdlib/blas": "^0.0.12",
+    "@umijs/utils": "^4.0.38",
+    "assert": "^2.0.0",
+    "csv-parser": "^3.0.0",
+    "csv-write-stream": "^2.0.0",
+    "csv-writer": "^1.6.0",
+    "konos": "^0.0.9",
+    "ml-distance": "^4.0.0",
+    "openai": "^3.2.1"
+  },
+  "devDependencies": {
+    "father": "^4.1.0",
+    "prettier": "^2.7.1",
+    "prettier-plugin-organize-imports": "^2.3.4",
+    "prettier-plugin-packagejson": "^2.2.18",
+    "tsx": "^3.9.0"
+  }
+}
