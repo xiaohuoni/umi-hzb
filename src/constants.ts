@@ -5,3 +5,4 @@ export const PROCESSED = join(__dirname, '../processed');
 export const MSX_TOKENS = 4095;
 export const MSX_CONTEXT_TOKENS = 666;
 export const MSX_RESPONSE_TOKENS = 500;
+export const PROXY_URL = 'https://proxy.igpthub.com/';

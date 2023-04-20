@@ -10,9 +10,6 @@ import {
 } from 'fs';
 import { PROCESSED as DEFAULT_PROCESSED } from '../constants';
 import { get_encoding } from '@dqbd/tiktoken';
-// 写成 csv 文件
-// import { createObjectCsvWriter } from 'csv-writer';
-import { Configuration, OpenAIApi } from 'openai';
 
 const parseMd = (mdString: string) => {
   // 去无不需要文案
@@ -82,7 +79,7 @@ export default (api: IApi) => {
     details: `generate scraped csv`,
     description: '',
     configResolveMode: 'loose',
-    async fn({ args: { apiKey } }) {
+    async fn({}) {
       const PROCESSED = api.userConfig?.processed || DEFAULT_PROCESSED;
       // # Load the cl100k_base tokenizer which is designed to work with the ada-002 model
       const enc = get_encoding('cl100k_base');
@@ -132,14 +129,8 @@ export default (api: IApi) => {
       // 开始处理目录
       await processDirectory(defaultDocs);
       enc.free();
-      // console.log('scrapeds', scrapeds.length);
-      const basePath = `https://proxy.igpthub.com/v1`;
-
-      const config = new Configuration({
-        apiKey: api.userConfig?.openAIKey || apiKey,
-        basePath,
-      });
-      const openai = new OpenAIApi(config);
+      
+      const openai = api.appData.openai;
       const contents = scrapeds.map((i: any) => i?.text || '');
       const { data } = await openai.createEmbedding({
         model: 'text-embedding-ada-002',
@@ -148,21 +139,7 @@ export default (api: IApi) => {
       data.data.forEach((item, index) => {
         scrapeds[index]['embedding'] = item.embedding;
       });
-      // 写成 csv 文件
-      //   const csvWriter = createObjectCsvWriter({
-      //     path: join(PROCESSED, 'embeddings.csv'),
-      //     header: [
-      //       { id: 'fileName', title: 'fileName' },
-      //       { id: 'text', title: 'text' },
-      //       { id: 'embedding', title: 'embedding' },
-      //     ],
-      //   });
-
-      //   csvWriter
-      //     .writeRecords(scrapeds) // returns a promise
-      //     .then(() => {
-      //       console.log('...Done');
-      //     });
+      
       writeFileSync(
         join(PROCESSED, 'embeddings.json'),
         JSON.stringify(scrapeds),
