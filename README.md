@@ -86,3 +86,8 @@ Node is chicken.
 /docs/README
 ```
 
+## References
+
+-   [openai-cookbook](https://github.com/openai/openai-cookbook/tree/main/apps/web-crawl-q-and-a) - Examples and guides for using the OpenAI API.
+-   [pdfGPT](https://github.com/wuomzfx/pdfGPT) - 基于 openai api 的超长 PDF 解析服务.
+-   [nextjs-openai-doc-search](https://github.com/supabase-community/nextjs-openai-doc-search#-build-time) - Template for building your own custom ChatGPT style doc search powered by Next.js, OpenAI, and Supabase.

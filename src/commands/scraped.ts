@@ -7,9 +7,15 @@ import {
   mkdirSync,
   existsSync,
   writeFileSync,
+  readdirSync,
 } from 'fs';
 import { PROCESSED as DEFAULT_PROCESSED } from '../constants';
 import { get_encoding } from '@dqbd/tiktoken';
+import { createHash } from 'crypto';
+
+const generateMD5Hash = (content: string) => {
+  return createHash('md5').update(content).digest('hex');
+};
 
 const parseMd = (mdString: string) => {
   // 去无不需要文案
@@ -56,20 +62,21 @@ const parseMd = (mdString: string) => {
   );
 };
 
-function promiseForEach(array: string[], callback: Function) {
-  return new Promise((resolve, reject) => {
-    let promises: Function[] = [];
-    array.forEach((item: string) => {
-      promises.push(callback(item));
-    });
-    Promise.all(promises)
-      .then(() => {
-        resolve(null);
-      })
-      .catch((error) => {
-        reject(error);
-      });
+function getMdFiles(dir: string, fileList: string[] = []) {
+  const files = readdirSync(dir);
+
+  files.forEach((file) => {
+    const filePath = join(dir, file);
+    const stat = statSync(filePath);
+
+    if (stat.isDirectory()) {
+      getMdFiles(filePath, fileList);
+    } else if (extname(file) === '.md' || extname(file) === '.mdx') {
+      fileList.push(filePath);
+    }
   });
+
+  return fileList;
 }
 
 export default (api: IApi) => {
@@ -80,71 +87,97 @@ export default (api: IApi) => {
     description: '',
     configResolveMode: 'loose',
     async fn({}) {
-      const PROCESSED = api.userConfig?.processed || DEFAULT_PROCESSED;
-      // # Load the cl100k_base tokenizer which is designed to work with the ada-002 model
-      const enc = get_encoding('cl100k_base');
-      if (!existsSync(PROCESSED)) {
-        mkdirSync(PROCESSED);
-      }
-      const defaultDocs = api.userConfig.docDirs || join(api.paths.cwd, 'doc');
-      const scrapeds: any = [];
+      try {
+        const PROCESSED = api.userConfig?.processed || DEFAULT_PROCESSED;
+        const openai = api.appData.openai;
 
-      // 递归函数，用于遍历目录并处理文件
-      const processDirectory = (directory: string) => {
-        return new Promise((resolve) => {
-          readdir(directory, (err, files) => {
-            if (err) {
-              console.error(err);
-              return;
-            }
-            promiseForEach(files, async (file: string) => {
-              const filePath = join(directory, file);
-              // 如果是子目录，则递归处理
-              if (statSync(filePath).isDirectory()) {
-                await processDirectory(filePath);
-              } else {
-                // 如果是 md 文件，则读取内容并写入 CSV
-                if (
-                  extname(filePath) === '.md' ||
-                  extname(filePath) === '.mdx'
-                ) {
-                  const mdText = parseMd(readFileSync(filePath, 'utf-8'));
-                  if (!mdText || mdText.length < 10) return;
-                  const fileName = filePath.replace(api.paths.cwd, '');
-                  const pattern = /(#|##)\s.*?\.?\s(?=#*\s)/g;
-                  const texts = mdText.match(pattern) || [mdText];
-                  texts.forEach((t) => {
-                    const tokens = enc.encode(t).length;
-                    scrapeds.push({ fileName, text: `${t}`, tokens });
-                  });
-                }
-              }
-            }).then(() => {
-              resolve(scrapeds);
+        // # Load the cl100k_base tokenizer which is designed to work with the ada-002 model
+        const enc = get_encoding('cl100k_base');
+        if (!existsSync(PROCESSED)) {
+          mkdirSync(PROCESSED);
+        }
+        const defaultDocs =
+          api.userConfig.docDirs || join(api.paths.cwd, 'doc');
+        const scrapeds: any = [];
+        let embeddingsStr = '[]';
+        try {
+          embeddingsStr = readFileSync(
+            join(PROCESSED, 'embeddings.json'),
+            'utf-8',
+          );
+        } catch (err) {}
+        let embeddings = JSON.parse(embeddingsStr) as any[];
+        let knowledgeStr = '{}';
+        try {
+          knowledgeStr = readFileSync(
+            join(PROCESSED, 'knowledge.json'),
+            'utf-8',
+          );
+        } catch (err) {}
+        const knowledge = JSON.parse(knowledgeStr);
+        const files = getMdFiles(defaultDocs);
+        for (const filePath of files) {
+          const mdText = parseMd(readFileSync(filePath, 'utf-8'));
+          if (!mdText) continue;
+          const md5Hash = generateMD5Hash(mdText);
+          const fileName = filePath.replace(api.paths.cwd, '');
+          // 存在就跳过，做增量更新
+          if (knowledge[fileName] === md5Hash) {
+            continue;
+          }
+          knowledge[fileName] = md5Hash;
+          // 删除旧的 fileName 的数据
+          embeddings = embeddings.filter((i) => i.fileName !== fileName);
+          console.log('正在解析：', fileName);
+          // TODO: 按一级标题和二级标题分割，感觉应该会有更好的办法
+          const pattern = /(#|##)\s.*?\.?\s(?=#*\s)/g;
+          const texts = mdText.match(pattern) || [mdText];
+          for (const t of texts) {
+            if (!t) continue;
+            const tokens = enc.encode(t).length;
+            scrapeds.push({
+              fileName,
+              text: `${t}`,
+              tokens,
             });
-          });
+          }
+        }
+        enc.free();
+
+        console.log('开始生成 Embedding...');
+        const contents = scrapeds.map((i: any) => i?.text || '');
+        // TODO: This model's maximum context length is 8191 tokens, however you requested 14311 tokens (14311 in your prompt; 0 for the completion). Please reduce your prompt; or completion length.
+        const { data } = await openai.createEmbedding({
+          model: 'text-embedding-ada-002',
+          input: contents,
         });
-      };
+        data.data.forEach((item, index) => {
+          scrapeds[index]['embedding'] = item.embedding;
+        });
+        console.log('开始写入 embeddings.json');
 
-      // 开始处理目录
-      await processDirectory(defaultDocs);
-      enc.free();
+        writeFileSync(
+          join(PROCESSED, 'embeddings.json'),
+          JSON.stringify([...embeddings, ...scrapeds]),
+          'utf-8',
+        );
+        console.log('开始写入 knowledge.json');
 
-      const openai = api.appData.openai;
-      const contents = scrapeds.map((i: any) => i?.text || '');
-      const { data } = await openai.createEmbedding({
-        model: 'text-embedding-ada-002',
-        input: contents,
-      });
-      data.data.forEach((item, index) => {
-        scrapeds[index]['embedding'] = item.embedding;
-      });
-
-      writeFileSync(
-        join(PROCESSED, 'embeddings.json'),
-        JSON.stringify(scrapeds),
-        'utf-8',
-      );
+        writeFileSync(
+          join(PROCESSED, 'knowledge.json'),
+          JSON.stringify(knowledge),
+          'utf-8',
+        );
+        console.log('生成 embeddings 完成');
+      } catch (error: any) {
+        if (error?.response?.data?.error?.message) {
+          console.log(
+            error?.response?.data?.error?.message || '我也不知道为啥出错',
+          );
+        } else {
+          throw error;
+        }
+      }
     },
   });
 };
