@@ -4,6 +4,8 @@ umi 文档答疑机器人
 
 临时在线服务： https://umi-ruddy.vercel.app/ 
 
+![image](https://user-images.githubusercontent.com/11746742/233385352-112400ee-46dd-4565-ae4f-4a3c2f63f3be.png)
+
 ## 安装使用
 
 ```bash
@@ -74,6 +76,8 @@ pnpm scraped
 
 等待执行结束，有报错注意报错，最终生成 `processed/embeddings.json`
 
+- 支持增量构建
+
 ### 测试结果
 
 ```bash
@@ -92,4 +96,3 @@ Node is chicken.
 
 -   [openai-cookbook](https://github.com/openai/openai-cookbook/tree/main/apps/web-crawl-q-and-a) - Examples and guides for using the OpenAI API.
 -   [pdfGPT](https://github.com/wuomzfx/pdfGPT) - 基于 openai api 的超长 PDF 解析服务.
--   [nextjs-openai-doc-search](https://github.com/supabase-community/nextjs-openai-doc-search#-build-time) - Template for building your own custom ChatGPT style doc search powered by Next.js, OpenAI, and Supabase.
