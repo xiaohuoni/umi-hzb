@@ -1,6 +1,8 @@
 # hzb
 
-umi 文档答疑机器人
+umi 文档答疑机器人 
+
+临时在线服务： https://umi-ruddy.vercel.app/ 
 
 ## 安装使用
 
