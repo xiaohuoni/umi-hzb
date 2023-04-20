@@ -33,6 +33,7 @@ const parseMd = (mdString: string) => {
       .replaceAll('。', '.')
       .replaceAll('“', `'`)
       .replaceAll('”', `'`)
+      .replaceAll('`', `'`)
 
       // 去除链接
       .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
