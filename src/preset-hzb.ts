@@ -1,10 +1,12 @@
 import { IApi } from 'konos';
 
 export default (api: IApi) => {
+  //@ts-ignore
+  const isKonos = api.service.opts.frameworkName === 'kono';
   return {
     plugins: [
       // config
-      require.resolve('./config/config'),
+      require.resolve('./config/hzbconfig'),
       // features
       require.resolve('./features/openai'),
 
@@ -13,7 +15,7 @@ export default (api: IApi) => {
       require.resolve('./commands/scraped'),
 
       // inits
-      require.resolve('./inits/demo'),
+      isKonos && require.resolve('./inits/demo'),
     ].filter(Boolean),
   };
 };

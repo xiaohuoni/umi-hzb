@@ -14,6 +14,42 @@ npm i hzb -g
 hzb ask --apiKey=openai_key
 ```
 
+> 支持三种方式设置 apiKey:
+> 
+> 1. 设置环境变量 process.env.OPENAI_API_KEY=you_openai_kei
+> 2. 执行命令携带参数，<command> --apiKey=you_openai_kei
+> 3. 在配置文件 .hzbrc.ts 中设置 openAIKey: 'you_openai_kei'
+
+<img width="1496" alt="image" src="https://user-images.githubusercontent.com/11746742/233239784-355a4a4e-cdd5-43d7-aff3-80e7b871e554.png">
+
+
+## 集成到 umi 系项目
+
+```bash
+pnpm i hzb
+```
+
+使用 `hzb/dist/preset-hzb` 或者从 `preset-hzb/dist` 中选择性使用 plugins
+
+```ts
+export default {
+    presets: [require.resolve('hzb/dist/preset-hzb'),]
+    openAIKey: 'you_openai_kei'
+};
+```
+
+使用 `umi ask` 等命令
+
+```bash
+> umi ask
+
+info  - [你知道吗？] 如果想检测未使用的文件和导出，可尝试新出的 deadCode 配置项，详见 https://umijs.org/docs/api/config#deadcode
+请输入你的问题：
+> hi
+ChatGPT:
+你好
+```
+
 ## 如何训练一个自己的文档答疑机器人？
 
 新建一个空的 npm 项目，然后新建一个配置文件 `.hzbrc.ts`:

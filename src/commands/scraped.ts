@@ -129,7 +129,7 @@ export default (api: IApi) => {
       // 开始处理目录
       await processDirectory(defaultDocs);
       enc.free();
-      
+
       const openai = api.appData.openai;
       const contents = scrapeds.map((i: any) => i?.text || '');
       const { data } = await openai.createEmbedding({
@@ -139,7 +139,7 @@ export default (api: IApi) => {
       data.data.forEach((item, index) => {
         scrapeds[index]['embedding'] = item.embedding;
       });
-      
+
       writeFileSync(
         join(PROCESSED, 'embeddings.json'),
         JSON.stringify(scrapeds),
