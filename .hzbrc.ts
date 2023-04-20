@@ -1,3 +1,3 @@
 export default {
-  openAIKey: `you_openai_kei`,
+  openAIKey: `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`,
 };

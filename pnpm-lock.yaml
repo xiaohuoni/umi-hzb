@@ -13,6 +13,9 @@ dependencies:
   assert:
     specifier: ^2.0.0
     version: 2.0.0
+  crypto:
+    specifier: ^1.0.1
+    version: 1.0.1
   csv-parser:
     specifier: ^3.0.0
     version: 3.0.0
@@ -2424,6 +2427,11 @@ packages:
       randombytes: 2.1.0
       randomfill: 1.0.4
     dev: true
+
+  /crypto@1.0.1:
+    resolution: {integrity: sha512-VxBKmeNcqQdiUQUW2Tzq0t377b54N2bMtXO/qiLa+6eRRmmC4qT3D4OnTGoT/U6O9aklQ/jTwbOtRMTTY8G0Ig==}
+    deprecated: This package is no longer supported. It's now a built-in Node module. If you've depended on crypto, you should switch to the one that's built-in.
+    dev: false
 
   /css-blank-pseudo@3.0.3(postcss@8.4.22):
     resolution: {integrity: sha512-VS90XWtsHGqoM0t4KpH053c4ehxZ2E6HtGI7x68YFV0pTo/QmkV/YFA+NnlvK8guxZVNWGQhVNJGC39Q8XF4OQ==}

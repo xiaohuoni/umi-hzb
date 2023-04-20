@@ -19,10 +19,13 @@ export default (api: IApi) => {
     async fn({ args: { debug } }) {
       const PROCESSED = api.userConfig?.processed || DEFAULT_PROCESSED;
       const openai = api.appData.openai;
-      const embeddingsStr = readFileSync(
-        join(PROCESSED, 'embeddings.json'),
-        'utf-8',
-      );
+      let embeddingsStr = '[]';
+      try {
+        embeddingsStr = readFileSync(
+          join(PROCESSED, 'embeddings.json'),
+          'utf-8',
+        );
+      } catch (err) {}
       const embeddings = JSON.parse(embeddingsStr) as any[];
       const rl = readline.createInterface({
         input: process.stdin,
@@ -119,9 +122,13 @@ Answer:
           console.log('');
           console.log('请输入你的问题：');
         } catch (error: any) {
-          console.log(
-            error?.response?.data?.error?.message || '我也不知道为啥出错',
-          );
+          if (error?.response?.data?.error?.message) {
+            console.log(
+              error?.response?.data?.error?.message || '我也不知道为啥出错',
+            );
+          } else {
+            throw error;
+          }
         }
       });
     },
