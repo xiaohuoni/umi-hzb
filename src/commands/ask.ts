@@ -8,7 +8,6 @@ import {
 import readline from 'readline';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { Configuration, OpenAIApi } from 'openai';
 import ddot from '@stdlib/blas/base/ddot';
 
 export default (api: IApi) => {
@@ -17,15 +16,9 @@ export default (api: IApi) => {
     details: `ask hzb`,
     description: '',
     configResolveMode: 'loose',
-    async fn({ args: { debug, apiKey } }) {
+    async fn({ args: { debug } }) {
       const PROCESSED = api.userConfig?.processed || DEFAULT_PROCESSED;
-      const basePath = `https://proxy.igpthub.com/v1`;
-
-      const config = new Configuration({
-        apiKey: api.userConfig?.openAIKey || apiKey,
-        basePath,
-      });
-      const openai = new OpenAIApi(config);
+      const openai = api.appData.openai;
       const embeddingsStr = readFileSync(
         join(PROCESSED, 'embeddings.json'),
         'utf-8',

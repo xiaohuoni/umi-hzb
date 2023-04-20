@@ -6,5 +6,6 @@ export function getSchemas(): Record<string, (Joi: Root) => any> {
     docDirs: (Joi) => Joi.string(),
     processed: (Joi) => Joi.string(),
     openAIKey: (Joi) => Joi.string(),
+    proxyUrl: (Joi) => Joi.string(),
   };
 }
