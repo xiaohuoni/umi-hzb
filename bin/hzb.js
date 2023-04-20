@@ -7,7 +7,7 @@ const argv = process.argv.slice(2);
 
 // 配置文件
 process.env.DEFAULT_CONFIG_FILES = '.hzbrc.ts';
-process.env.KONO_PRESETS = join(__dirname, `../dist/preset`);
+process.env.KONO_PRESETS = join(__dirname, `../dist/preset-hzb`);
 
 const konos = winPath(join(__dirname, '../node_modules/.bin/konos'));
 const spawn = sync(konos, [...argv], {
