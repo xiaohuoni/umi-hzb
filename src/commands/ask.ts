@@ -1,15 +1,15 @@
-import { askAi } from '@hzb-design/core';
-import ddot from '@stdlib/blas/base/ddot';
+import {
+  askAi,
+  calculateCosineSimilarity,
+  generateContext,
+  generateEmbedding,
+  getPromptMessage,
+} from '@hzb-design/core';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import readline from 'readline';
 import { IApi } from 'umi';
-import {
-  MSX_CONTEXT_TOKENS,
-  MSX_RESPONSE_TOKENS,
-  MSX_TOKENS,
-  PROCESSED as DEFAULT_PROCESSED,
-} from '../constants';
+import { PROCESSED as DEFAULT_PROCESSED } from '../constants';
 
 export default (api: IApi) => {
   api.registerCommand({
@@ -34,72 +34,29 @@ export default (api: IApi) => {
 
       console.log('请输入你的问题：');
       rl.on('line', async (question) => {
+        if (!question) return;
         // Generate question embedding
         try {
-          const { data: questionData } = await askAi({
-            type: 'createEmbedding',
-            payload: {
-              input: [question],
-            },
+          const questionEmbedding = await generateEmbedding(question);
+          const matched = calculateCosineSimilarity({
+            questionEmbedding,
+            embeddings,
           });
-          const questionEmbedding = questionData.data[0].embedding;
-
-          // 2.2、Calculate cosine similarity
-          const x = new Float64Array(questionEmbedding);
-          const matched = embeddings
-            .map(({ embedding, text, tokens, fileName, n_tokens }) => {
-              const y = new Float64Array(embedding);
-              const d = ddot(x.length, x, 1, y, 1);
-              return {
-                ddot: d,
-                text,
-                tokens: tokens || n_tokens,
-                fileName,
-              };
-            })
-            .sort((a, b) => b.ddot - a.ddot)
-            .filter((k) => k.ddot > 0.8);
-          const contexts = [];
-          // 记录 context token 长度
-          let curLen = 0;
-          // 记录链接
-          const REFS = {} as any;
-          for (let key = 0; key < matched.length; key++) {
-            const { text = '', tokens = 0, fileName } = matched[key];
-            curLen += tokens + 4;
-
-            if (curLen > MSX_CONTEXT_TOKENS) {
-              contexts.push(text.slice(0, curLen - MSX_CONTEXT_TOKENS));
-              REFS[fileName] = true;
-              break;
-            }
-
-            contexts.push(text);
-            REFS[fileName] = true;
-          }
-          const mostSimilarContent = contexts.join('\n\n###\n\n');
+          const { REFS, context, maxTokens } = generateContext({ matched });
           if (debug) {
-            console.log(`Context:
-          ${mostSimilarContent}`);
+            console.log(context);
           }
-          const prompt = `
-Answer the question based on the context below, and if the question can't be answered based on the context, say "I don't know".请尽量使用中文回答.
+          const message = getPromptMessage({
+            context,
+            question,
+          });
 
-Context:
-${mostSimilarContent}
-          
-Question:
-${question}
-          
-Answer: 
-  `;
-          const maxTokens = curLen + MSX_RESPONSE_TOKENS;
           const completion = await askAi({
             type: 'createChatCompletion',
             payload: {
-              messages: [{ role: 'user', content: prompt }],
-              // 留 500 token 用于回答
-              max_tokens: maxTokens > MSX_TOKENS ? MSX_TOKENS : maxTokens,
+              messages: [{ role: 'user', content: message }],
+              max_tokens: maxTokens,
+              temperature: 0.8,
             },
           });
           const answer = completion?.data?.choices?.[0].message?.content;
@@ -108,9 +65,8 @@ Answer:
           console.log('');
 
           console.log('参考链接:');
-          Object.keys(REFS)
-            .filter((_, index) => index < 3)
-            .forEach((l) => {
+          REFS.filter((_: any, index: number) => index < 3).forEach(
+            (l: string) => {
               console.log(
                 l
                   .replace('/doc/umidocs/', 'https://umijs.org/')
@@ -118,7 +74,8 @@ Answer:
                   .replace('.mdx', '')
                   .replace('.md', ''),
               );
-            });
+            },
+          );
           console.log('');
           console.log('请输入你的问题：');
         } catch (error: any) {
