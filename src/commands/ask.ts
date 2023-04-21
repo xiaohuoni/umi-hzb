@@ -1,3 +1,8 @@
+import { askAi } from '@hzb-design/core';
+import ddot from '@stdlib/blas/base/ddot';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import readline from 'readline';
 import { IApi } from 'umi';
 import {
   MSX_CONTEXT_TOKENS,
@@ -5,10 +10,6 @@ import {
   MSX_TOKENS,
   PROCESSED as DEFAULT_PROCESSED,
 } from '../constants';
-import readline from 'readline';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import ddot from '@stdlib/blas/base/ddot';
 
 export default (api: IApi) => {
   api.registerCommand({
@@ -18,7 +19,6 @@ export default (api: IApi) => {
     configResolveMode: 'loose',
     async fn({ args: { debug } }) {
       const PROCESSED = api.userConfig?.processed || DEFAULT_PROCESSED;
-      const openai = api.appData.openai;
       let embeddingsStr = '[]';
       try {
         embeddingsStr = readFileSync(
@@ -36,9 +36,11 @@ export default (api: IApi) => {
       rl.on('line', async (question) => {
         // Generate question embedding
         try {
-          const { data: questionData } = await openai.createEmbedding({
-            model: 'text-embedding-ada-002',
-            input: [question],
+          const { data: questionData } = await askAi({
+            type: 'createEmbedding',
+            payload: {
+              input: [question],
+            },
           });
           const questionEmbedding = questionData.data[0].embedding;
 
@@ -92,15 +94,13 @@ ${question}
 Answer: 
   `;
           const maxTokens = curLen + MSX_RESPONSE_TOKENS;
-          const completion = await openai.createChatCompletion({
-            model: 'gpt-3.5-turbo',
-            messages: [{ role: 'user', content: prompt }],
-            // 留 500 token 用于回答
-            max_tokens: maxTokens > MSX_TOKENS ? MSX_TOKENS : maxTokens,
-            temperature: 0.5,
-            top_p: 1,
-            frequency_penalty: 0,
-            presence_penalty: 0,
+          const completion = await askAi({
+            type: 'createChatCompletion',
+            payload: {
+              messages: [{ role: 'user', content: prompt }],
+              // 留 500 token 用于回答
+              max_tokens: maxTokens > MSX_TOKENS ? MSX_TOKENS : maxTokens,
+            },
           });
           const answer = completion?.data?.choices?.[0].message?.content;
           console.log('ChatGPT:');

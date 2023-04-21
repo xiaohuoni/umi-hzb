@@ -1,6 +1,7 @@
 import { IApi } from 'umi';
 
 export default (api: IApi) => {
+  console.log('hzb presets');
   //@ts-ignore
   return {
     plugins: [

@@ -1,4 +1,4 @@
 #!/usr/bin/env node
-process.title = 'valita';
+process.title = 'hzb';
 
 require('../dist/cli');
