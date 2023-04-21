@@ -1,4 +1,4 @@
-import { IApi } from 'konos';
+import { IApi } from 'umi';
 import { getSchemas } from './schema';
 
 export default (api: IApi) => {

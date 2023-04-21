@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { IApi, InitType } from 'konos';
+import { IApi } from 'umi';
 
 export default (api: IApi) => {
   api.describe({
@@ -11,7 +11,7 @@ export default (api: IApi) => {
     name: 'demo',
     description: '初始化框架包',
     template: join(__dirname, '..', '..', 'templates', 'demo'),
-    type: InitType.init,
+    type: 'init',
     questions: [],
   });
 };

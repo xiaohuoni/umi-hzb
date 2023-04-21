@@ -1,17 +1,17 @@
-import { IApi } from 'konos';
-import { join, extname } from 'path';
-import {
-  readdir,
-  statSync,
-  readFileSync,
-  mkdirSync,
-  existsSync,
-  writeFileSync,
-  readdirSync,
-} from 'fs';
-import { PROCESSED as DEFAULT_PROCESSED } from '../constants';
 import { get_encoding } from '@dqbd/tiktoken';
+import { askAi } from '@hzb-design/core';
 import { createHash } from 'crypto';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'fs';
+import { extname, join } from 'path';
+import { IApi } from 'umi';
+import { PROCESSED as DEFAULT_PROCESSED } from '../constants';
 
 const generateMD5Hash = (content: string) => {
   return createHash('md5').update(content).digest('hex');
@@ -148,9 +148,12 @@ export default (api: IApi) => {
         console.log('开始生成 Embedding...');
         const contents = scrapeds.map((i: any) => i?.text || '');
         // TODO: This model's maximum context length is 8191 tokens, however you requested 14311 tokens (14311 in your prompt; 0 for the completion). Please reduce your prompt; or completion length.
-        const { data } = await openai.createEmbedding({
-          model: 'text-embedding-ada-002',
-          input: contents,
+        const { data } = await askAi({
+          type: 'createEmbedding',
+          payload: {
+            model: 'text-embedding-ada-002',
+            input: contents,
+          },
         });
         data.data.forEach((item, index) => {
           scrapeds[index]['embedding'] = item.embedding;

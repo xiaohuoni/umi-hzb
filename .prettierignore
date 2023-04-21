@@ -13,3 +13,4 @@ fixtures
 packages/native/templates/alita-ios
 packages/native/templates/alita-android
 .turbo
+processed/**

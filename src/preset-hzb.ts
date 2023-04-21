@@ -1,8 +1,8 @@
-import { IApi } from 'konos';
+import { IApi } from 'umi';
 
 export default (api: IApi) => {
+  console.log('hzb presets');
   //@ts-ignore
-  const isKonos = api.service.opts.frameworkName === 'kono';
   return {
     plugins: [
       // config
@@ -13,9 +13,10 @@ export default (api: IApi) => {
       // commands
       require.resolve('./commands/ask'),
       require.resolve('./commands/scraped'),
+      require.resolve('konos/dist/commands/init'),
 
       // inits
-      isKonos && require.resolve('./inits/demo'),
+      require.resolve('./inits/demo'),
     ].filter(Boolean),
   };
 };
