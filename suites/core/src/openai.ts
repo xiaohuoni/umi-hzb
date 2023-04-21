@@ -114,9 +114,6 @@ const askAi = async ({
       return openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
         temperature: 0.5,
-        top_p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0,
         ...(payload as HCreateChatCompletionRequest),
       });
     default:
