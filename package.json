@@ -1,6 +1,6 @@
 {
   "name": "hzb",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "",
   "keywords": [],
   "homepage": "https://github.com/xiaohuoni/umi-hzb",
@@ -34,17 +34,10 @@
     "release": "lerna publish --force-publish=*"
   },
   "dependencies": {
-    "@dqbd/tiktoken": "^1.0.6",
-    "@hzb-design/core": "0.0.12",
-    "@stdlib/blas": "^0.0.12",
+    "@hzb-design/core": "^0.0.13",
     "@umijs/utils": "^4.0.38",
     "assert": "^2.0.0",
-    "crypto": "^1.0.1",
-    "csv-parser": "^3.0.0",
-    "csv-write-stream": "^2.0.0",
-    "csv-writer": "^1.6.0",
     "konos": "^0.0.11",
-    "ml-distance": "^4.0.0",
     "umi": "^4.0.66"
   },
   "devDependencies": {
