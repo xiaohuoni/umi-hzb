@@ -1,1 +1,1 @@
-export * from 'konos';
+export * from 'umi';

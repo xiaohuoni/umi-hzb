@@ -1,4 +1,4 @@
-import { IApi } from 'konos';
+import { IApi } from 'umi';
 import { join, extname } from 'path';
 import {
   readdir,

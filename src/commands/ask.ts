@@ -1,4 +1,4 @@
-import { IApi } from 'konos';
+import { IApi } from 'umi';
 import {
   MSX_CONTEXT_TOKENS,
   MSX_RESPONSE_TOKENS,

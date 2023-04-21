@@ -1,4 +1,4 @@
-import { IApi } from 'konos';
+import { IApi } from 'umi';
 import { Configuration, OpenAIApi } from 'openai';
 import { PROXY_URL } from '../constants';
 import assert from 'assert';
