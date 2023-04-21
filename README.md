@@ -1,5 +1,7 @@
 # hzb
 
+[![Based On Umi](https://img.shields.io/badge/based%20on-umi-blue)](http://umijs.org/)
+
 umi 文档答疑机器人 
 
 临时在线服务： https://umi-ruddy.vercel.app/ 
