@@ -36,15 +36,75 @@ export const getMdFiles = (
 const generateMD5Hash = (content: string) => {
   return createHash('md5').update(content).digest('hex');
 };
+interface ContextText {
+  heading: string;
+  level: number;
+  index: number;
+  content: string;
+}
 
-const segmentationString = (mdString: string, extendParse: Function) => {
+const getContextHeading = (
+  text: ContextText,
+  texts: ContextText[],
+): ContextText => {
+  const { level, index, heading, content } = text;
+  if (level < 2) return text;
+  let parentItem: ContextText | null = null;
+  const cTexts: ContextText[] = texts.filter((i) => i.level < level);
+
+  for (let key = cTexts.length - 1; key >= 0; key--) {
+    const item: ContextText = cTexts[key];
+    if (item.index < index) {
+      // 找到父级
+      parentItem = item;
+      break;
+    }
+  }
+
+  const item: ContextText = {
+    ...parentItem!,
+    content,
+    heading: `${parentItem?.heading} ${heading}`,
+  };
+
+  return getContextHeading(item, texts);
+};
+
+const segmentationString = (
+  mdString: string,
+  extendParse?: Function,
+): ContextText[] => {
   if (extendParse && typeof extendParse === 'function') {
     return extendParse(mdString);
   }
-  // TODO: 按一级标题和二级标题分割，感觉应该会有更好的办法
-  const pattern = /(#|##)\s.*?\.?\s(?=#*\s)/g;
-  const texts = mdString.match(pattern) || [mdString];
-  return texts;
+  const regex = /^(#+)\s(.+?)\n([\s\S]+?)(?=^#+)/gm;
+
+  let match;
+  const result = [];
+  let index = 0;
+  while ((match = regex.exec(mdString)) !== null) {
+    const heading = match[2];
+    const content = match[0]
+      .trim()
+      .replace(new RegExp(`^${match[1]}\\s${heading}\\n`, 'gm'), '');
+    result.push({
+      index,
+      heading: match[2],
+      level: match[1].length,
+      content: parseMdString(content),
+    });
+    index += 1;
+  }
+  // 只有一个标题带内容的情况
+  if (!result[0]) {
+    result.push({
+      index: 0,
+      heading: '',
+      level: 1,
+      content: parseMdString(mdString),
+    });
+  }
+  return result;
 };
 
 const parseMdString = (
@@ -65,7 +125,7 @@ const parseMdString = (
     .replaceAll('。', '.')
     .replaceAll('“', `'`)
     .replaceAll('”', `'`)
-    .replaceAll('`', `'`)
+    // .replaceAll('`', `'`)
 
     // 去除链接
     .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
@@ -77,7 +137,7 @@ const parseMdString = (
     // 去除所有的代码块
     // .replace(/```[\s\S]*?```/g, ' ')
     // 只去除 ts 和 js
-    // .replace(/```(ts?|js?|tsx?|jsx?|typescript?|javascript)[\s\S]*?```/g, ' ')
+    .replace(/```(ts?|js?|tsx?|jsx?|typescript?|javascript)[\s\S]*?```/g, ' ')
     // 去除 emoji
     .replace(/[\u{1F600}-\u{1F64F}]/gu, ' ')
     .replace(/[\u{1F300}-\u{1F5FF}]/gu, ' ')
@@ -102,6 +162,7 @@ interface KnowledgeMap {
 interface EmbeddingItem {
   fileName: string;
   text: string;
+  heading: string;
   tokens: number;
   embedding?: Array<number>;
 }
@@ -155,19 +216,22 @@ export const generateContext = ({
   // 记录链接
   const REFS = {} as any;
   for (let key = 0; key < matched.length; key++) {
-    const { text = '', tokens = 0, fileName } = matched[key];
+    const { text = '', tokens = 0, fileName, heading = '' } = matched[key];
     contextTokens += tokens + 4;
 
     if (contextTokens > MSX_CONTEXT_TOKENS) {
-      contexts.push(text.slice(0, contextTokens - MSX_CONTEXT_TOKENS));
+      contexts.push(
+        text.slice(0, contextTokens - MSX_CONTEXT_TOKENS).replace(heading, ''),
+      );
       REFS[fileName] = true;
       break;
     }
 
-    contexts.push(text);
+    contexts.push(text.replace(heading, ''));
     REFS[fileName] = true;
   }
   const mostSimilarContent = contexts.join('\n\n###\n\n');
+
   const maxTokens = contextTokens + MSX_RESPONSE_TOKENS;
   return {
     contextTokens,
@@ -186,7 +250,7 @@ export const calculateCosineSimilarity = ({
 }): EmbeddingItem[] => {
   const x = new Float64Array(questionEmbedding);
   const matched = embeddings
-    .map(({ embedding, text, tokens, fileName }) => {
+    .map(({ embedding, text, tokens, fileName, heading }) => {
       const y = new Float64Array(embedding!);
       const d = ddot(x.length, x, 1, y, 1);
       return {
@@ -194,10 +258,12 @@ export const calculateCosineSimilarity = ({
         text,
         tokens: tokens,
         fileName,
+        heading,
       };
     })
     .sort((a, b) => b.ddot - a.ddot)
-    .filter((k) => k.ddot > 0.8);
+    // 由于后续做了 token 拼接，总长度限制，所以不准确的数据也没有关系
+    // .filter((k) => k.ddot > 0.7);
 
   return matched;
 };
@@ -244,6 +310,9 @@ export const generateHugeEmbeddings = async (
   }
   if (key < scrapeds.length - 1) {
     reqScrapeds = scrapeds.splice(key);
+    console.log(
+      `开始通过 openai 生成 Embeddings，本次请求 tokens 为 ${tokens}`,
+    );
     const reSs = await generateEmbeddings(reqScrapeds);
     reScrapeds = [...reScrapeds, ...reSs];
   }
@@ -257,7 +326,7 @@ export const generateEmbeddings = async (scrapeds: EmbeddingItem[]) => {
       resolve();
     }, 1000);
   });
-  const contents = scrapeds.map((i: any) => i?.text || '');
+  const contents = scrapeds.map((i: any) => parseMdString(i?.text) || '');
   const { data } = await askAi({
     type: 'createEmbedding',
     payload: {
@@ -283,7 +352,7 @@ export const generateScrapeds = async ({
   const enc = get_encoding('cl100k_base');
   const files = getMdFiles(dir);
   for (const filePath of files) {
-    const mdText = parseMdString(readFileSync(filePath, 'utf-8'));
+    const mdText = readFileSync(filePath, 'utf-8');
     if (!mdText) continue;
     const md5Hash = generateMD5Hash(mdText);
     const fileName = filePath.replace(cwd, '');
@@ -296,13 +365,17 @@ export const generateScrapeds = async ({
     embeddings = embeddings.filter((i) => i.fileName !== fileName);
     console.log('正在解析：', fileName);
     const texts = segmentationString(mdText);
-    for (const t of texts) {
-      if (!t) continue;
-      const tokens = enc.encode(t).length;
+    // 塞更多的 heading 给匹配文本，让匹配更准确，但是再提交 Context 中，heading 又无意义
+    for (const { content, heading } of texts.map((i) =>
+      getContextHeading(i, texts),
+    )) {
+      if (!content) continue;
+      const tokens = enc.encode(content).length;
       scrapedsTokens += tokens;
       scrapeds.push({
         fileName,
-        text: `${t}`,
+        heading,
+        text: `${heading} ${content}`,
         tokens,
       });
     }

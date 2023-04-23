@@ -43,14 +43,15 @@ export default (api: IApi) => {
             embeddings,
           });
           const { REFS, context, maxTokens } = generateContext({ matched });
-          if (debug) {
-            console.log(context);
-          }
+
           const message = getPromptMessage({
             context,
             question,
           });
 
+          if (debug) {
+            console.log('messages:', message);
+          }
           const completion = await askAi({
             type: 'createChatCompletion',
             payload: {
